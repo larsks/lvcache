@@ -68,7 +68,7 @@ The `fedora` VG comprises the following physical volumes (PVs):
       /dev/sda2 465.27g        
       /dev/sdb  223.57g cache  
 
-Using default values:
+### Using default values
 
     # lvcache -v fedora/libvirt
     INFO:root:origin size: 42G (42949672960 bytes)
@@ -94,7 +94,10 @@ Behind the scenes, this runs the following sequence of commands:
     lvconvert --type cache-pool --poolmetadata fedora/libvirt_cache_md fedora/libvirt_cache
     lvconvert --type cache --cachepool fedora/libvirt_cache fedora/libvirt
 
-Using a cache that is 50% the size of the origin volume:
+## Specifying cache size
+
+This examples uses a cache volume that is 50% the size of the origin
+volume:
 
     # lvcache -v -% 50 fedora/libvirt
     INFO:root:origin size: 42G (42949672960 bytes)

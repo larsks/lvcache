@@ -10,6 +10,9 @@ import logging
 args = None
 
 
+os.environ['LVM_SUPPRESS_FD_WARNINGS'] = '1'
+
+
 class LVException(Exception):
     pass
 
@@ -96,11 +99,15 @@ def human_format(num):
 
 def parse_args():
     p = argparse.ArgumentParser()
-    p.add_argument('--cache-size', '-s')
+    p.add_argument('--cache-size', '-s',
+                   help='Size of cache volume')
     p.add_argument('--cache-percent', '-p', '-%',
-                   default=20, type=int)
-    p.add_argument('--cache-device', '-d')
-    p.add_argument('--cache-tag', '-t', default='cache')
+                   default=20, type=int,
+                   help='Size of cache volume as %% of origin volume')
+    p.add_argument('--cache-device', '-d',
+                   help='PV on which to place cache volume')
+    p.add_argument('--cache-tag', '-t', default='cache',
+                   help='Tag for selecting PV on which to place cache volume')
     p.add_argument('--verbose', '-v',
                    action='store_const',
                    const=logging.INFO,
@@ -110,8 +117,10 @@ def parse_args():
                    const=logging.DEBUG,
                    dest='loglevel')
     p.add_argument('--dryrun', '-n',
-                   action='store_true')
-    p.add_argument('lvspec')
+                   action='store_true',
+                   help='Print rather than execute LVM commands')
+    p.add_argument('lvspec',
+                   help='Origin LV specified as vg_name/lv_name')
 
     p.set_defaults(loglevel=logging.WARN)
     return p.parse_args()
@@ -141,27 +150,38 @@ def main():
         sys.exit(1)
 
     lv_size = lv.getSize()
-    vg.close()
 
     if args.cache_size:
         cache_size = int(parse_units(args.cache_size))
     elif args.cache_percent:
         cache_size = int(lv_size * (args.cache_percent/100.0))
     else:
+        logging.error('unable to determine size of cache volume')
         sys.exit(1)
-
-    cache_md_size = max(parse_units('8m'), cache_size/1000)
-
-    cache_size = adjust_512(cache_size)
-    cache_md_size = adjust_512(cache_md_size)
-
-    print 'LV %s/%s' % (vg_name, lv_name)
-    print '  Original size:', human_format(lv_size), lv_size
-    print '  Cache data size:', human_format(cache_size), cache_size
-    print '  Cache metadata size:', human_format(cache_md_size), cache_md_size
 
     cache_data_name = '%s_cache' % lv_name
     cache_md_name = '%s_cache_md' % lv_name
+
+    try:
+        vg.lvFromName(cache_data_name)
+        logging.error('a logical volume named %s already exists.',
+                      cache_data_name)
+        sys.exit(1)
+    except Exception, detail:
+        pass
+
+    vg.close()
+
+    cache_md_size = max(parse_units('8m'), cache_size/1000)
+    cache_size = adjust_512(cache_size)
+    cache_md_size = adjust_512(cache_md_size)
+
+    logging.info('origin size: %s (%d bytes)', human_format(lv_size),
+                 lv_size)
+    logging.info('cache data size: %s (%d bytes)',
+                 human_format(cache_size), cache_size)
+    logging.info('cache metadata size: %s (%d bytes)',
+                 human_format(cache_md_size), cache_md_size)
 
     if args.cache_device:
         dev_arg=args.cache_device
@@ -189,3 +209,5 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+

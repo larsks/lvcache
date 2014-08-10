@@ -163,13 +163,18 @@ def main():
     cache_data_name = '%s_cache' % lv_name
     cache_md_name = '%s_cache_md' % lv_name
 
+    if args.cache_device:
+        dev_arg=args.cache_device
+    elif args.cache_tag:
+        dev_arg='@%s' % args.cache_tag
+
     logging.info('creating cache data lv %s', cache_data_name)
     lv_create('-L', '%sb' % cache_size,
-              '-n', cache_data_name, vg_name)
+              '-n', cache_data_name, vg_name, dev_arg)
 
     logging.info('creating cache metadata lv %s', cache_md_name)
     lv_create('-L', '%sb' % cache_md_size,
-              '-n', cache_md_name, vg_name)
+              '-n', cache_md_name, vg_name, dev_arg)
 
     logging.info('creating cache pool')
     lv_convert('--type', 'cache-pool',

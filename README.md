@@ -94,7 +94,7 @@ Behind the scenes, this runs the following sequence of commands:
     lvconvert --type cache-pool --poolmetadata fedora/libvirt_cache_md fedora/libvirt_cache
     lvconvert --type cache --cachepool fedora/libvirt_cache fedora/libvirt
 
-## Specifying cache size
+### Specifying cache size
 
 This examples uses a cache volume that is 50% the size of the origin
 volume:
@@ -112,4 +112,18 @@ volume:
       Converted fedora/libvirt_cache to cache pool.
     INFO:root:attach cache pool to volume fedora/libvirt
       fedora/libvirt is now cached.
+
+## Removing a cache volume
+
+To remove a cache volume, simply run `lvremove` on the cache volume:
+
+    # lvremove fedora/libvirt_cache
+    Do you really want to remove and DISCARD logical volume libvirt_cache? [y/n]: y
+      Flushing cache for libvirt.
+      0 blocks must still be flushed.
+      Logical volume "libvirt_cache" successfully removed
+
+This will flush the cache back to the origin lv and remove both the
+cache data and metadata volumes.  Your origin volume will continue to
+be available but without any attached cached.
 

@@ -1,3 +1,8 @@
+**WARNING** This is being heavily rewritten, possibly as you are
+reading this.  This document has no bearing on reality at this point
+in time.
+
+
 ## Overview
 
 The `lvcache` command is a wrapper for the sequence of commands

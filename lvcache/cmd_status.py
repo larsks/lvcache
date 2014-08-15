@@ -4,6 +4,7 @@ import logging
 from cliff.show import ShowOne
 
 from . import lvm
+from . import utils
 
 class Status(ShowOne):
     'Show information about LVM cache volumes'
@@ -21,28 +22,28 @@ class Status(ShowOne):
         vg = lvm.VolumeGroup(vg_name)
         lv = vg.volume(lv_name)
 
-        columns = ['cached', 'size']
-        data = [lv.is_cached(), lv.lv_size]
+        data = [['cached', lv.is_cached()],
+                ['size', lv.lv_size]]
 
         if lv.is_cached():
             cache_lv = vg.volume(lv.pool_lv)
-            columns.append('cache_pool')
-            data.append(cache_lv.name)
-            columns.append('cache_size')
-            data.append(cache_lv.lv_size)
+            data.append(['cache_lv', cache_lv.name])
+            data.append(['cache_lv_size', cache_lv.lv_size])
 
             md_lv = vg.volume(cache_lv.metadata_lv[1:-1])
-            columns.append('metadata_name')
-            data.append(md_lv.name)
-            columns.append('metadata_size')
-            data.append(md_lv.lv_size)
+            data.append(['metadata_lv', md_lv.name])
+            data.append(['metadata_lv_size', md_lv.lv_size])
 
             status = lv.cache_status()
             for k in sorted(status.keys()):
-                columns.append(k)
-                data.append(status[k])
+                data.append([k, status[k]])
 
-        return (columns,data)
+        for datum in data:
+            if self.app.options.human and 'size' in datum[0]:
+                datum[1] = utils.human_format(datum[1])
+
+        return ([x[0] for x in data],
+                [x[1] for x in data])
 
 
 

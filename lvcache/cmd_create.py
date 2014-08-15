@@ -22,8 +22,12 @@ class Create(Command):
                             help='Size of cache LV as percentage of data LV')
         parser.add_argument('--cache-device', '-d',
                             help='PV on which to place cache LV')
-        parser.add_argument('--cache-tag', '-t', default='cache',
+        parser.add_argument('--cache-tag', '-t',
+                            default='cache',
                             help='Tag for selecting PV on which to place cache LV')
+        parser.add_argument('--cache-mode', '-m',
+                            default='writeback',
+                            help='Set cache mode')
 
         parser.add_argument('lvspec')
         return parser
@@ -38,12 +42,20 @@ class Create(Command):
                 vg_name, lv_name))
 
         lv_size = lv.lv_size
-        cache_size = adjust_512(lv_size * (args.cache_percent/100.0))
-        
-        self.log.info('creating %d byte cache LV for %d byte data LV',
-                      cache_size, lv_size)
+        cache_size = adjust_512(int(lv_size * (args.cache_percent/100.0)))
+        md_size = adjust_512(int(cache_size/1000.0))
+
+        self.log.info('creating %d byte metadata LV', md_size)
+        md_lv = vg.create_volume('%s_md' % lv_name,
+                                 size=md_size,
+                                 pv_tag=args.cache_tag,
+                                 pv_dev=args.cache_device)
+
+        self.log.info('creating %d byte cache LV', cache_size)
         cache_lv = vg.create_cache_pool('%s_cache' % lv_name,
                                         size=cache_size,
+                                        mode=args.cache_mode,
+                                        metadata_lv=md_lv,
                                         pv_tag=args.cache_tag,
                                         pv_dev=args.cache_device)
 
@@ -51,4 +63,3 @@ class Create(Command):
                       lv.vg.name, lv.name,
                       cache_lv.vg.name, cache_lv.name)
         lv.attach_cache_pool(cache_lv)
-

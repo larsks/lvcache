@@ -5,9 +5,7 @@ in time.
 
 ## Overview
 
-The `lvcache` command is a wrapper for the sequence of commands
-required to create an LVM cache volume and attach it to an existing
-"origin" volume.
+The `lvcache` command helps you create and manage LVM cache devices.
 
 ## Synopsis
 

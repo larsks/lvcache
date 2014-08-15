@@ -6,7 +6,7 @@ from collections import namedtuple
 
 lv_attributes = namedtuple('lv_attributes',
                            ['type', 'permissions', 'allocation',
-                            'minor', 'state', 'open', 'target', 
+                            'minor', 'state', 'open', 'target',
                             'zero', 'health', 'skip'])
 
 cache_status_fields = [
@@ -27,9 +27,9 @@ cache_status_fields = [
     'features',
 ]
 
-def simple_lvs(*args):
-    return lvs('--noheadings', '--unbuffered',
-                  '--nosuffix', '--units', 'b', *args)
+lvs = lvs.bake('--noheadings', '--unbuffered',
+               '--nosuffix', '--units', 'b')
+
 
 def find_device(parent, major, minor):
     for dev in os.listdir(parent):
@@ -41,6 +41,7 @@ def find_device(parent, major, minor):
 
         if this_major == major and this_minor == minor:
             return path
+
 
 class LogicalVolume(object):
 
@@ -54,8 +55,8 @@ class LogicalVolume(object):
         return '<LV %s/%s>' % (self.vg.name, self.name)
 
     def attributes(self):
-        res = simple_lvs('-o', 'lv_attr', '%s/%s' % (self.vg.name,
-                             self.name))
+        res = lvs('-o', 'lv_attr', '%s/%s' % (self.vg.name,
+                                              self.name))
 
         return lv_attributes(*(x for x in res.strip()))
 
@@ -83,16 +84,18 @@ class LogicalVolume(object):
             if status[k].isdigit():
                 status[k] = int(status[k])
             elif '/' in status[k]:
-                a,b = [int(x) for x in status[k].split('/')]
+                a, b = [int(x) for x in status[k].split('/')]
                 status['%s_pct' % k] = (a*1.0/b*1.0)*100
-                
+
         return status
 
     def remove_cache_pool(self):
         if not self.is_cached():
             raise ValueError('LV is of wrong type')
 
-        lvremove('-f', '%s/%s' % (self.vg.name, self.pool_lv))
+        for line in lvremove('-f', '%s/%s' % (self.vg.name, self.pool_lv),
+                             _iter=True):
+            self.log.info(line.strip())
 
     def attach_cache_pool(self, cache_lv):
         lvconvert('--type', 'cache',
@@ -101,7 +104,7 @@ class LogicalVolume(object):
                   '%s/%s' % (self.vg.name, self.name))
 
     def __getattr__(self, k):
-        res = simple_lvs('-o', k, '%s/%s' % (self.vg.name,
+        res = lvs('-o', k, '%s/%s' % (self.vg.name,
                                       self.name))
 
         res = res.strip()
@@ -119,7 +122,7 @@ class VolumeGroup(object):
         return '<VG %s>' % self.name
 
     def volumes(self):
-        res = simple_lvs('-o', 'name', self.name)
+        res = lvs('-o', 'name', self.name)
         return [LogicalVolume(self, x.strip()) for x in res.split('\n') if x.strip()]
 
     def volume(self, lv_name):
@@ -134,9 +137,24 @@ class VolumeGroup(object):
         lvcreate('-n', lv_name, '-L', '%sb' % size, self.name, *pvargs)
         return LogicalVolume(self, lv_name)
 
-    def create_cache_pool(self, *args, **kwargs):
-        cache_lv = self.create_volume(*args, **kwargs)
-        lvconvert('--type', 'cache-pool', '%s/%s' % (self.name,
-                                                     cache_lv.name))
+    def create_cache_pool(self, lv_name,
+                          mode='writeback',
+                          metadata_lv=None,
+                          **kwargs):
+        cache_lv = self.create_volume(lv_name, **kwargs)
+        if mode not in ['writeback', 'writethrough']:
+            raise ValueError('invalid cache mode: %s' % mode)
+
+        args = ('--type', 'cache-pool',
+                  '--cachemode', mode)
+
+        if metadata_lv is not None:
+            md_args = ( '--poolmetadata',
+                       '%s/%s' % (metadata_lv.vg.name,
+                                  metadata_lv.name))
+            args = args + md_args
+
+        lvconvert(*(args + ('%s/%s' % (self.name,
+                                       cache_lv.name),)))
 
         return cache_lv

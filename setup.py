@@ -10,10 +10,16 @@ setup(
     author_email='lars@oddbit.com',
     url='http://github.com/larsks/lvcache',
     install_requires=open('requirements.txt').readlines(),
-    py_modules=['lvcache'],
+    find_packages=True,
     entry_points = {
         'console_scripts': [
-            'lvcache=lvcache:main',
+            'lvcache=lvcache.main:main',
+        ],
+        'com.oddbit.lvcache': [
+            'status = lvcache.cmd_status:Status',
+            'create = lvcache.cmd_create:Create',
+            'remove = lvcache.cmd_remove:Remove',
+            'list = lvcache.cmd_list:List',
         ],
     }
 )

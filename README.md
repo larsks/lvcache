@@ -9,6 +9,23 @@ The `lvcache` command helps you create and manage LVM cache devices.
   Display volume sizes using SI suffixes (e.g., 1M = 1000K =
   1000000B).
 
+## Listing information about existing LVs
+
+    lvcache list [-h] [-f {csv,table}] [-c COLUMN] [--max-width <integer>]
+                 [--quote {all,minimal,none,nonnumeric}] [--all]
+                 vgname
+
+List LVs on VG `tank`:
+
+    # lvcache list tank
+    +---------+-----------+------+
+    | name    | is_cached | size |
+    +---------+-----------+------+
+    | home    | False     | 157G |
+    | root    | True      | 53G  |
+    | vol0    | False     | 2G   |
+    +---------+-----------+------+
+
 ## Creating and attaching a cache volume
 
     lvcache create [-h] [--cache-percent CACHE_PERCENT]

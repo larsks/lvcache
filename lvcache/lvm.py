@@ -1,13 +1,26 @@
 import os
 import logging
 
-from sh import dmsetup, lvs, lvremove, lvcreate, lvconvert
+from sh import (
+    dmsetup,
+    lvs,
+    lvremove,
+    lvcreate,
+    lvconvert)
 from collections import namedtuple
 
-lv_attributes = namedtuple('lv_attributes',
-                           ['type', 'permissions', 'allocation',
-                            'minor', 'state', 'open', 'target',
-                            'zero', 'health', 'skip'])
+lv_attributes = namedtuple('lv_attributes', [
+    'type',
+    'permissions',
+    'allocation',
+    'minor',
+    'state',
+    'open',
+    'target',
+    'zero',
+    'health',
+    'skip'
+])
 
 cache_status_fields = [
     'start',
@@ -123,17 +136,18 @@ class VolumeGroup(object):
 
     def volumes(self):
         res = lvs('-o', 'name', self.name)
-        return [LogicalVolume(self, x.strip()) for x in res.split('\n') if x.strip()]
+        return [LogicalVolume(self, x.strip())
+                for x in res.split('\n') if x.strip()]
 
     def volume(self, lv_name):
         return LogicalVolume(self, lv_name)
 
     def create_volume(self, lv_name, size=None, pv_tag=None, pv_dev=None):
         if pv_tag is not None:
-            pvargs=['@%s' % pv_tag]
+            pvargs = ['@%s' % pv_tag]
         elif pv_dev is not None:
-            pvargs=[pv_dev]
-        
+            pvargs= [pv_dev]
+
         lvcreate('-n', lv_name, '-L', '%sb' % size, self.name, *pvargs)
         return LogicalVolume(self, lv_name)
 
@@ -146,10 +160,10 @@ class VolumeGroup(object):
             raise ValueError('invalid cache mode: %s' % mode)
 
         args = ('--type', 'cache-pool',
-                  '--cachemode', mode)
+                '--cachemode', mode)
 
         if metadata_lv is not None:
-            md_args = ( '--poolmetadata',
+            md_args = ('--poolmetadata',
                        '%s/%s' % (metadata_lv.vg.name,
                                   metadata_lv.name))
             args = args + md_args

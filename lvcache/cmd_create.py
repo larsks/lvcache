@@ -43,7 +43,7 @@ class Create(Command):
 
         lv_size = lv.lv_size
         cache_size = adjust_512(int(lv_size * (args.cache_percent/100.0)))
-        md_size = adjust_512(int(cache_size/1000.0))
+        md_size = adjust_512(max(int(cache_size/1000.0), 8388608))
 
         self.log.info('creating %d byte metadata LV', md_size)
         md_lv = vg.create_volume('%s_md' % lv_name,

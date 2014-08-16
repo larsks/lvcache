@@ -1,132 +1,161 @@
-**WARNING** This is being heavily rewritten, possibly as you are
-reading this.  This document has no bearing on reality at this point
-in time.
-
-
 ## Overview
 
 The `lvcache` command helps you create and manage LVM cache devices.
 
-## Synopsis
+## Global options
 
-    lvcache.py [-h] [--cache-size CACHE_SIZE]
-              [--cache-percent CACHE_PERCENT]
-              [--cache-device CACHE_DEVICE] [--cache-tag CACHE_TAG]
-              [--verbose] [--debug] [--dryrun]
-              lvspec
+- `--human`, `-H`
 
-## Options
+  Display volume sizes using SI suffixes (e.g., 1M = 1000K =
+  1000000B).
 
-- `--cache-size`, `-s` *size*
+## Creating and attaching a cache volume
 
-  Specifies the size of the cache volume in bytes.  As with LVM, you
-  may specify units as (k)ilobytes, (m)egabytes, (g)igabytes,
-  (t)erabytes, (p)etabytes, (e)xabytes.  Capitalize the units for SI
-  units (multiples of 1000) instead of multiples of 1024.
+    lvcache create [-h] [--cache-percent CACHE_PERCENT]
+                   [--cache-device CACHE_DEVICE]
+                   [--cache-tag CACHE_TAG] [--cache-mode CACHE_MODE]
+                   lvspec
 
 - `--cache-percent`, `-%` *percent*
 
-  Specifies the size of the cache volume as a percentage of the size
-  of the origin volume.
+  Set the size of the cache LV as a percentage of the size of the
+  origin LV.
 
-  By default, `lvcache` will create a cache volume that is 20% the
-  size of the origin volume.
-
-- `--cache-device`, `-d` *device*
-
-  Specify the PV (physical volume) on which to place the cache
-  volume as a device path (e.g., `/dev/sdb`).
+  Defaults to 20%.
 
 - `--cache-tag`, `-t` *tag*
 
-  Specify the PV (physical volume) on which to place the cache
-  volume as a PV tag (e.g., `cache`).  You can apply tags to your
-  physical volumes using the `pvchange --addtag <tag>` command.
+  Places cache and metadata LV on PV identified by tag *tag*.  You can
+  see tags associated with PVs by running:
 
-  By default, `lvcache` will select PVs with the `cache` tag.
+      pvs -o+tags
 
-- `--verbose`, `-v`
+  You can apply a tag to a PV with the `pvchange` command:
 
-  Enable verbose output.
+      pvchange --addtag <tag> /dev/sdx
 
-- `--debug`, `-D`
+  Defaults to `cache`.
 
-  Enable debug output.
+- `--cache-device`, `-d` *device*
 
-- `--dryrun`, `-n`
+  Please cache and metadata LV on specific a specific PV identified by
+  a device path (e.g., `/dev/sda`).
 
-  Print rather than execute LVM commands
+- `--cache-mode`, `-m` *mode*
+
+  Sets cache mode for cache LV.  Can be either `writeback` or
+  `writethrough`.  **NB**: This option may not be implemented in LVM
+  at this time.
+
+Create a cache LV and attach it to `tank/home`:
+
+    # lvcache create tank/home
+    creating 8388608 byte metadata LV
+    creating 6442450944 byte cache LV
+    attaching cache LV tank/home to data LV tank/home_cache
+
+## Detaching and removing a cache LV
+
+    lvcache remove [-h] lvspec
+
+Remove the cache LV associated with `tank/home`:
+
+    # lvcache remove tank/home
+    removing cache LV tank/home_cache
+    Flushing cache for home.
+    534 blocks must still be flushed.
+    0 blocks must still be flushed.
+
+## Getting the status of a cached LV
+
+    lvcache status [-h] [-f {shell,table,value}] [-c COLUMN]
+                   [--max-width <integer>]
+                   [--variable VARIABLE] [--prefix PREFIX]
+                   lvspec
+
+Display status of the `home` LV:
+
+    # lvcache status -H tank/home
+    +-----------------------+------------------+
+    | Field                 | Value            |
+    +-----------------------+------------------+
+    | cached                | True             |
+    | size                  | 32G              |
+    | cache_lv              | home_cache       |
+    | cache_lv_size         | 6G               |
+    | metadata_lv           | home_cache_cmeta |
+    | metadata_lv_size      | 8M               |
+    | cache_block_size      | 128              |
+    | cache_utilization     | 0/98304          |
+    | cache_utilization_pct | 0.0              |
+    | demotions             | 0                |
+    | dirty                 | 0                |
+    | end                   | 62914560         |
+    | features              | 1                |
+    | md_block_size         | 8                |
+    | md_utilization        | 200/2048         |
+    | md_utilization_pct    | 9.765625         |
+    | promotions            | 0                |
+    | read_hits             | 0                |
+    | read_misses           | 0                |
+    | segment_type          | cache            |
+    | start                 | 0                |
+    | write_hits            | 0                |
+    | write_misses          | 0                |
+    +-----------------------+------------------+
+
+Because `lvcache` is using the [cliff][] framework, it is very easy to
+extract individual values from this list for graphing or monitoring
+purposes:
+
+    # lvcache status tank.home -f value -c md_utilization_pct
+    9.765625
+
+Or:
+
+    # lvcache status tank.home -f shell
+    cached="True"
+    size="32G"
+    cache_lv="nova_cache"
+    cache_lv_size="6G"
+    metadata_lv="nova_cache_cmeta"
+    metadata_lv_size="8M"
+    cache_block_size="128"
+    cache_utilization="0/98304"
+    cache_utilization_pct="0.0"
+    demotions="0"
+    dirty="0"
+    end="62914560"
+    features="1"
+    md_block_size="8"
+    md_utilization="200/2048"
+    md_utilization_pct="9.765625"
+    promotions="0"
+    read_hits="0"
+    read_misses="0"
+    segment_type="cache"
+    start="0"
+    write_hits="0"
+    write_misses="0"
 
 
-## Examples
+[cliff]: http://cliff.readthedocs.org/en/latest/
 
-The following examples assume a volume group (VG) named `fedora`
-exists and that on this volume group there exists a logical volume
-(LV) named `libvirt`.
+## License
 
-The `fedora` VG comprises the following physical volumes (PVs):
+lvcache, a program for managing LVM cache devices  
+Copyright (C) 2014 Lars Kellogg-Stedman <lars@oddbit.com>
 
-    # pvs -oname,size,tags
-      PV        PSize   PV Tags
-      /dev/sda2 465.27g        
-      /dev/sdb  223.57g cache  
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
 
-### Using default values
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
 
-    # lvcache -v fedora/libvirt
-    INFO:root:origin size: 42G (42949672960 bytes)
-    INFO:root:cache data size: 8G (8589934592 bytes)
-    INFO:root:cache metadata size: 8M (8589824 bytes)
-    INFO:root:creating cache data lv libvirt_cache
-      Logical volume "libvirt_cache" created
-    INFO:root:creating cache metadata lv libvirt_cache_md
-      Rounding up size to full physical extent 12.00 MiB
-      Logical volume "libvirt_cache_md" created
-    INFO:root:creating cache pool
-      Converted fedora/libvirt_cache to cache pool.
-    INFO:root:attach cache pool to volume fedora/libvirt
-      fedora/libvirt is now cached.
-    # lvs -o name,attr 2>&1 | grep libvirt
-      libvirt                                     Cwi-aoC---
-      libvirt_cache                               Cwi---C---
-
-Behind the scenes, this runs the following sequence of commands:
-
-    lvcreate -L 8589934592b -n libvirt_cache fedora @cache
-    lvcreate -L 8589824b -n libvirt_cache_md fedora @cache
-    lvconvert --type cache-pool --poolmetadata fedora/libvirt_cache_md fedora/libvirt_cache
-    lvconvert --type cache --cachepool fedora/libvirt_cache fedora/libvirt
-
-### Specifying cache size
-
-This examples uses a cache volume that is 50% the size of the origin
-volume:
-
-    # lvcache -v -% 50 fedora/libvirt
-    INFO:root:origin size: 42G (42949672960 bytes)
-    INFO:root:cache data size: 21G (21474836480 bytes)
-    INFO:root:cache metadata size: 21M (21474816 bytes)
-    INFO:root:creating cache data lv libvirt_cache
-      Logical volume "libvirt_cache" created
-    INFO:root:creating cache metadata lv libvirt_cache_md
-      Rounding up size to full physical extent 24.00 MiB
-      Logical volume "libvirt_cache_md" created
-    INFO:root:creating cache pool
-      Converted fedora/libvirt_cache to cache pool.
-    INFO:root:attach cache pool to volume fedora/libvirt
-      fedora/libvirt is now cached.
-
-## Removing a cache volume
-
-To remove a cache volume, simply run `lvremove` on the cache volume:
-
-    # lvremove fedora/libvirt_cache
-    Do you really want to remove and DISCARD logical volume libvirt_cache? [y/n]: y
-      Flushing cache for libvirt.
-      0 blocks must still be flushed.
-      Logical volume "libvirt_cache" successfully removed
-
-This will flush the cache back to the origin lv and remove both the
-cache data and metadata volumes.  Your origin volume will continue to
-be available but without any attached cached.
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
 

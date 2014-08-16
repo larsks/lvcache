@@ -4,6 +4,7 @@ import logging
 from cliff.lister import Lister
 
 from . import lvm
+from . import utils
 
 class List(Lister):
     'List available LVs on a given VG'
@@ -21,6 +22,10 @@ class List(Lister):
     def take_action(self, args):
         vg = lvm.VolumeGroup(args.vgname)
 
-        return (('name', 'is_cached', 'attributes'),
-                ((x.name, x.is_cached(), x.lv_attr) for x in vg.volumes()
+        return (('name', 'is_cached', 'size'),
+                ((x.name,
+                  x.is_cached(),
+                  utils.human_format(x.lv_size)
+                  if self.app.options.human
+                  else x.lv_size) for x in vg.volumes()
                  if args.all or x.attributes().state == 'a'))

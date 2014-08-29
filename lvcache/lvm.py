@@ -152,7 +152,7 @@ class VolumeGroup(object):
         return LogicalVolume(self, lv_name)
 
     def create_cache_pool(self, lv_name,
-                          mode='writeback',
+                          mode='writethrough',
                           metadata_lv=None,
                           **kwargs):
         cache_lv = self.create_volume(lv_name, **kwargs)

@@ -64,6 +64,8 @@ List LVs on VG `tank`:
   `writethrough`.  **NB**: This option may not be implemented in LVM
   at this time.
 
+    The default mode is `writethrough`.
+
 Create a cache LV and attach it to `tank/home`:
 
     # lvcache create tank/home

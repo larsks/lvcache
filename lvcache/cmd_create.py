@@ -26,7 +26,7 @@ class Create(Command):
                             default='cache',
                             help='Tag for selecting PV on which to place cache LV')
         parser.add_argument('--cache-mode', '-m',
-                            default='writeback',
+                            default='writethrough',
                             help='Set cache mode')
 
         parser.add_argument('lvspec')

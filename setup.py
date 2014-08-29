@@ -10,7 +10,7 @@ setup(
     author_email='lars@oddbit.com',
     url='http://github.com/larsks/lvcache',
     install_requires=open('requirements.txt').readlines(),
-    find_packages=True,
+    packages=find_packages(),
     entry_points = {
         'console_scripts': [
             'lvcache=lvcache.main:main',

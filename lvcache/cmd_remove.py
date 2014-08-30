@@ -26,4 +26,5 @@ class Remove(Command):
 
         self.log.info('removing cache LV %s/%s' % (lv.vg.name,
                                                    lv.pool_lv))
-        lv.remove_cache_pool()
+        if not self.app.options.dryrun:
+            lv.remove_cache_pool()

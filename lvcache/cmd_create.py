@@ -46,20 +46,22 @@ class Create(Command):
         md_size = adjust_512(max(int(cache_size/1000.0), 8388608))
 
         self.log.info('creating %d byte metadata LV', md_size)
-        md_lv = vg.create_volume('%s_md' % lv_name,
-                                 size=md_size,
-                                 pv_tag=args.cache_tag,
-                                 pv_dev=args.cache_device)
+        if not self.app.options.dryrun:
+            md_lv = vg.create_volume('%s_md' % lv_name,
+                                     size=md_size,
+                                     pv_tag=args.cache_tag,
+                                     pv_dev=args.cache_device)
 
         self.log.info('creating %d byte cache LV', cache_size)
-        cache_lv = vg.create_cache_pool('%s_cache' % lv_name,
-                                        size=cache_size,
-                                        mode=args.cache_mode,
-                                        metadata_lv=md_lv,
-                                        pv_tag=args.cache_tag,
-                                        pv_dev=args.cache_device)
+        if not self.app.options.dryrun:
+            cache_lv = vg.create_cache_pool('%s_cache' % lv_name,
+                                            size=cache_size,
+                                            mode=args.cache_mode,
+                                            metadata_lv=md_lv,
+                                            pv_tag=args.cache_tag,
+                                            pv_dev=args.cache_device)
 
-        self.log.info('attaching cache LV %s/%s to data LV %s/%s',
-                      lv.vg.name, lv.name,
-                      cache_lv.vg.name, cache_lv.name)
-        lv.attach_cache_pool(cache_lv)
+            self.log.info('attaching cache LV %s/%s to data LV %s/%s',
+                          lv.vg.name, lv.name,
+                          cache_lv.vg.name, cache_lv.name)
+            lv.attach_cache_pool(cache_lv)

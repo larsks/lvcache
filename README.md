@@ -2,12 +2,27 @@
 
 The `lvcache` command helps you create and manage LVM cache devices.
 
+## Installation
+
+This is a standard Python package, you can run:
+
+    python setup.py install
+
+Or:
+
+    pip install .
+
+Or you can even install it directly from GitHub:
+
+    pip install git+http://github.com/larsks/lvcache.git
+
 ## Global options
 
 - `--human`, `-H`
 
   Display volume sizes using SI suffixes (e.g., 1M = 1000K =
   1000000B).
+
 
 ## Listing information about existing LVs
 

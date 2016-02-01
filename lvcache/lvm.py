@@ -117,8 +117,11 @@ class LogicalVolume(object):
                   '%s/%s' % (self.vg.name, self.name))
 
     def __getattr__(self, k):
+        name = self.name
+        if name.startswith('[') and name.endswith(']'):
+            name = name[1:-1]
         res = lvs('-o', k, '%s/%s' % (self.vg.name,
-                                      self.name))
+                                      name))
 
         res = res.strip()
         if res.isdigit():

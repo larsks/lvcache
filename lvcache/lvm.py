@@ -159,7 +159,8 @@ class VolumeGroup(object):
         if mode not in ['writeback', 'writethrough']:
             raise ValueError('invalid cache mode: %s' % mode)
 
-        args = ('--type', 'cache-pool',
+        args = ('--yes',
+                '--type', 'cache-pool',
                 '--cachemode', mode)
 
         if metadata_lv is not None:

@@ -4,7 +4,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='lvcache',
-    version='1',
+    version='1.0.1',
     description='Wrapper for creating cached LVM logical volumes',
     author='Lars Kellogg-Stedman',
     author_email='lars@oddbit.com',

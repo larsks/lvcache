@@ -106,7 +106,7 @@ class LogicalVolume(object):
         if not self.is_cached():
             raise ValueError('LV is of wrong type')
 
-        for line in lvremove('-f', '%s/%s' % (self.vg.name, self.pool_lv),
+        for line in lvremove('--yes', '--force', '%s/%s' % (self.vg.name, self.pool_lv),
                              _iter=True):
             self.log.info(line.strip())
 
@@ -117,15 +117,14 @@ class LogicalVolume(object):
                   '%s/%s' % (self.vg.name, self.name))
 
     def __getattr__(self, k):
-        name = self.name
-        if name.startswith('[') and name.endswith(']'):
-            name = name[1:-1]
         res = lvs('-o', k, '%s/%s' % (self.vg.name,
-                                      name))
+                                      self.name))
 
         res = res.strip()
         if res.isdigit():
             res = int(res)
+        if k == 'pool_lv' and res.startswith('[') and res.endswith(']'):
+            res = res[1:-1]
 
         return res
 

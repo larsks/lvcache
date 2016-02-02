@@ -9,7 +9,7 @@ setup(
     author='Lars Kellogg-Stedman',
     author_email='lars@oddbit.com',
     url='http://github.com/larsks/lvcache',
-    install_requires=open('requirements.txt').readlines(),
+    install_requires=['cliff', 'sh'],
     packages=find_packages(),
     entry_points = {
         'console_scripts': [
